@@ -1,43 +1,39 @@
-import React, { useContext, useState, useEffect } from 'react';
-import { FavoritesContext } from '../context/Favorites'
-import RecipesList from './nested-components/RecipesList';
-import { Link } from 'react-router-dom';
+import { createContext, useReducer } from 'react';
 
-import '../styles/desktop/RecipesList.scss';
-import '../styles/tablet/RecipesList.scss';
-import '../styles/mobile/RecipesList.scss';
+const SET_FAVORITE_RECIPES = 'SET_FAVORITE_RECIPES';
 
-import '../styles/desktop/Favorites.scss';
-import '../styles/tablet/Favorites.scss';
-import '../styles/mobile/Favorites.scss';
+const FAVORITES = "favorites";
 
-const Favorites = () => {
-    const [favoritesFound, setFavoritesFound] = useState(null);
-    const { favorites } = useContext(FavoritesContext);
+const getStoredFavorites = () => {
+    const favorites = localStorage.getItem("favorites");
+    return favorites ? JSON.parse(favorites) : []
+}
 
-    useEffect(() => {
-        favorites.length > 0 ? setFavoritesFound(true) : setFavoritesFound(false);
-    }, [favorites.length])
+const initialState = getStoredFavorites();
+
+const reducer = (state, action) => {
+    switch (action.type) {
+        case SET_FAVORITE_RECIPES:
+            localStorage.setItem(FAVORITES, JSON.stringify(action.favorites));
+            return action.favorites;
+        default:
+            return state;
+    }
+}
+
+export const FavoritesContext = createContext(initialState);
+
+export const FavoritesProvider = ({ children }) => {
+    const [state, dispatch] = useReducer(reducer, initialState);
+
+    const setFavoriteRecipes = (favorites) => dispatch({ type: SET_FAVORITE_RECIPES, favorites })
 
     return (
-        <main className="favorite-recipes">
-            <RecipesList recipes={favorites} title="My favorite recipes" />
-            <NoFavoritesFound favoritesFound={favoritesFound} />
-        </main>
-    )
+        <FavoritesContext.Provider value={{
+            favorites: state,
+            setFavoriteRecipes
+        }}>
+            {children}
+        </FavoritesContext.Provider>
+    );
 }
-
-const NoFavoritesFound = ({ favoritesFound}) => {
-    return(
-        <>
-            {
-                !favoritesFound && <Link to="/Recipes" className="no-favorites">
-                                        <p>No favorite recipes yet.</p>
-                                        <p><span>Search</span> for your favorite recipes!</p>
-                                    </Link>
-            }
-        </>
-    )
-}
-
-export default Favorites
